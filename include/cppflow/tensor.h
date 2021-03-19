@@ -189,6 +189,9 @@ namespace cppflow {
         TFE_OpAddInput(op, this->tfe_handle.get(), context::get_status());
         status_check(context::get_status());
 
+        // Output type should be int64_t
+        TFE_OpSetAttrType(op, "out_type", cppflow::datatype::TF_INT64);
+
         // EXECUTE
         int n = 1;
         TFE_TensorHandle* res[1] = { nullptr };
@@ -212,6 +215,16 @@ namespace cppflow {
 
     template<typename T>
     std::vector<T> tensor::get_data() const {
+
+        // Check if asked datatype and tensor datatype match
+        if (this->dtype() != deduce_tf_type<T>()) {
+            auto type1 = cppflow::to_string(deduce_tf_type<T>());
+            auto type2 = cppflow::to_string(this->dtype());
+            auto error = "Datatype in function get_data (" + type1 + ") does not match tensor datatype (" + type2 + ")";
+            throw std::runtime_error(error);
+        }
+
+
         auto res_tensor = get_tensor();
 
         // Check tensor data is not empty
